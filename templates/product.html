@@ -1,0 +1,53 @@
+{% for product in products %}
+<tr pid="{{product._id}}" kws="{{product.key_words}}" pname="{{product.product_name}}" aid="{{product.aid}}">
+  {% if index %}
+    <td>{{index}}</td>
+  {% else %}
+    <td>{{loop.index}}</td>
+  {% endif %}
+
+  <td>
+    <a href="{{product.url}}" target="_blank">
+      <img src="/images/{{product.product_name_path}}/{{product.product_name_path}}.jpg" width="100">
+    </a>
+  </td>
+
+  <td width="100">
+    <div class="btn-group">
+      <button type="button" class="btn btn-primary reRichDesc">Rich{% if product.aid %}*{% endif %}</button>
+      <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+        <span class="caret"></span>
+        <span class="sr-only">Toggle Dropdown1</span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li><a href="javascript:void(0);" class="productID">Get Product ID</a></li>
+        <li><a href="javascript:void(0);" class="showKW">Show Key Words Info</a></li>
+        <li><a href="javascript:void(0);" class="changeKW" data-toggle="modal" data-target="#ckwModal">Change Key Word</a></li>
+        <li class="divider"></li>
+        <li><a href="javascript:void(0);" class="deleteProduct">Delete Product</a></li>
+      </ul>
+    </div>
+  </td>
+  <td width="120">
+    <div class="btn-group">
+      <button type="button" class="btn btn-primary uploadProduct">Upload</button>
+      <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+        <span class="caret"></span>
+        <span class="sr-only">Toggle Dropdown2</span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li><a href="javascript:void(0);" class="copyProduct">Copy</a></li>
+      </ul>
+    </div>
+  </td>
+  <td>
+    <div class="input-group">
+      <input type="text" class="form-control" value="{{product.product_name}}">
+      <span class="input-group-btn">
+        <button class="btn btn-primary changeProductName" type="button">Alter</button>
+        <button class="btn btn-primary collectProductName" type="button">Variant</button>
+      </span>
+    </div>
+  </td>
+</tr>
+{% endfor %}
