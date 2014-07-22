@@ -1,0 +1,33 @@
+tab:
+    id: customerInfo
+    name: Customer
+form:
+    id: customerInfoForm
+    fields:
+        - element: input
+          label: Email
+          type: email
+          name: email
+        - element: input
+          label: Name
+          type: text
+          name: name
+        - element: input
+          label: Country
+          type: text
+          name: coutnry
+        - element: input
+          label: Telephone
+          type: text
+          name: telephone
+        - element: input
+          label: Address
+          type: text
+          name: address
+        - element: button
+          content: Submit
+          type: button
+table:
+    heads: [ Name, Email, Telephone ]
+    body:
+        id: customerTable

@@ -1,0 +1,19 @@
+tab:
+    id: profile
+    name: Keywords
+form:
+    id: kwForm
+    fields:
+        - element: input
+          label: Keyword
+          type: text 
+          name: skwl
+          id: skwl
+        - element: button
+          content: Submit
+          type: button
+          id: getKWS
+table:
+    heads: [ Word, Used, company_cnt, showwin_cnt, hotness]
+    body:
+        id: kwt

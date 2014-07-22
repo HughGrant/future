@@ -1,0 +1,17 @@
+tab:
+    id: loginSet
+    name: Accouts
+form:
+    id: logForm
+    fields:
+        - element: input
+          label: Email Account
+          type: email
+          name: email
+        - element: input
+          label: Password
+          type: password
+          name: password
+        - element: button
+          content: Append New Alibaba Account
+          type: submit

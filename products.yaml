@@ -1,0 +1,21 @@
+tab:
+    id: home
+    name: Products
+form:
+    id: uploadForm
+    fields:
+        - element: input
+          label: URL
+          type: url
+          name: url
+        - element: input
+          label: Key Words
+          type: text
+          name: key_words
+        - element: button
+          content: Submit
+          type: submit
+table:
+    heads: [ No, Picture, Actions, Upload]
+    body:
+        id: productTable
