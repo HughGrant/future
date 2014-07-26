@@ -7,18 +7,6 @@ function get_pid (ele) {
 	return $(ele).parents('tr').attr('pid');
 }
 
-function get_kws (ele) {
-	return $(ele).parents('tr').attr('kws');
-}
-
-function get_pname (ele) {
-	return $(ele).parents('tr').attr('pname');
-}
-
-function get_aid (ele) {
-	return $(ele).parents('tr').attr('aid');
-}
-
 $.fn.serializeObject = function()
 {
    var o = {};
@@ -37,12 +25,11 @@ $.fn.serializeObject = function()
 };
 
 ws.onmessage = function (message) {
-	console.log(message);
 	var msg = message.data;
-
+	console.log(msg);
 	if (msg == 'login success') {
 		logged = true;
-		$('#logForm').hide();
+		$('#allTabs').show();
 		return false;
 	} else if (msg.indexOf('id:') !== -1) {
 		var aid = msg.split(':')[1];
@@ -54,45 +41,70 @@ ws.onmessage = function (message) {
 }
 
 $(function(){
-	$('#logForm').submit(function () {
-		var ap = $(this).serializeObject();
-		$.post('/set_account', ap, function (html) {
-			if (html) {
-				$('#logBtnGroup').append(html);
-			} else {
-				alert('Already exist');
-			}
-		});
-		return false;
-	});
-    // create a customer info with shipping address
-    $('#customerInfoForm').submit(function () {
-		var info = $(this).serializeObject();
-        $.post('/customer', info, function (html) {
-            console.log(html); 
+    $('#quit').click(function () {
+        if (ws.readyState === 1) {
+			ws.send('quit');
+		} else {
+			console.log('WebSocket error or aid not exist');
+		}
+    });
+
+    $('#add_more_object').click(function () {
+        // var inputs = $(this).parents('form').find('input');
+        // $.each(inputs, function(i, obj) {
+        //     $(obj).after(obj.outerHTML);
+        // });
+        var inputs = $(this).parents('form').find('div[class="form-group"]');
+        var html = '<hr>';
+        $.each(inputs, function(i, obj) {
+            if (i < 4) {
+                html += obj.outerHTML;
+            };
         });
+        var p = $(this).parents('form').find('div[class="form-group"]:eq(3)');
+        p.after(html);
+    });
+
+    $(document).on('click', '.uniOrder', function () {
+        var pid = get_pid(this);
+        var uni = $(this);
+        var action = uni.attr('action');
+        var data ={'pid':pid}
+         
+        $.post(action, data, function (msg) {
+            alert(msg);
+        });
+    });
+
+    $(document).on('submit', '.uniCreate', function () {
+        var form = $(this);
+        var action = form.attr('action');
+        var data = form.serializeObject();
+        var tableId = form.attr('tid');
+        $.post(action, data).done(function (html) {
+            $('#'+tableId).prepend(html);
+        })
         return false;
     });
 
-	// upload product to mongodb
-	$('#uploadForm').submit(function () {
-		var info = $(this).serializeObject();
-		var number = $('tr').length;
-		info['index'] = number
-		$.post('/product', info, function (html) {
-			$('#productTable').prepend(html);
-			$('input[name="url"]').val('');
-		});
-		return false;
-	});
+    $(document).on('click', '.uniChange', function () {
+        var pid = get_pid(this);
+        var uni = $(this);
+        var action = uni.attr('action');
+        $('#uniForm input[name=pid]').val(pid);
+        $('#uniForm input[name=action]').val(action);
+        $('#uniModal h4').html(uni.text());
+        $('#uniModal').modal();
+    });
 
-	$('#skwl').keydown(function (event) {
-		if(13 === event.keyCode) {
-			$.post('/add_keywords', {'key_words':$(this).val()}, function (data) {
-				alert(data.ok);
-			});
-		}
-	});
+    $('#uniForm').submit( function () {
+		var info = $(this).serializeObject();
+        $.post(info.action, info, function (data) {
+            $('#uniModal').modal("hide");
+            alert(data);
+        });
+        return false;
+    });
 
 	$(document).on('click', '.deleteProduct', function () {
 		var pid = get_pid(this);
@@ -105,6 +117,26 @@ $(function(){
 			}
 		});
 	});
+
+	$(document).on('click', '.uniws', function () {
+        var action = $(this).attr('action');
+        var pid = get_pid(this);
+        if (ws.readyState === 1 && pid) {
+            console.log(pid);
+			ws.send(action + '<>' + pid);
+		} else {
+			console.log('WebSocket error or aid not exist');
+		}
+    });
+
+	$(document).on('click', '.showPanel', function () {
+        var replace_id = '#' + $(this).attr('replace_id');
+        var action = '/' + $(this).attr('action');
+
+        $.post(action).done(function (html) {
+            $(replace_id).html(html);
+        });
+    });
 
 	$(document).on('click', '.copyProduct', function () {
 		if (!logged) {
@@ -129,49 +161,36 @@ $(function(){
 		});
 	});
 
-	$('#nkw').keydown(function (event) {
-		if (13 === event.keyCode) {
-			var pid = $('#nkw').attr('pid');
-			var kws = $('#nkw').val();
-			data = {'key_words':kws, 'pid':pid};
-			$.post('/change_key_words', data, function (data) {
-				if (data.success) {
-					$('tr[pid="' + pid + '"]').remove();
-					$('#ckwModal').modal('toggle');
-				}
-			});
-		}
-	})
-	
-	$(document).on('click', '.changeKW', function () {
-		$('#nkw').val(get_kws(this));
-		$('#nkw').attr('pid', get_pid(this));
-	});
-
-	$(document).on('click', '.showKW', function () {
-		var keywords = get_kws(this);
-		$.post('/list_key_words', {'key_words':keywords}, function (html) {
+	$(document).on('click', '.showKeyword', function () {
+        var pid = get_pid(this);
+        var action = $(this).attr('action');
+		$.post(action, {'pid':pid}, function (html) {
 			$('#kwt').html(html);
-			$('#skwl').val(keywords + ':');
-			$('#myTab li:eq(1) a').tab('show');
+			$('a[href="#profile"]').tab('show');
 		});
 	});
 
-	$(document).on('click', '#getKWS', function () {
-		var keywords = $('#skwl').val();
-		$.post('/list_key_words', {'key_words':keywords}, function (html) {
-			$('#kwt').html(html);
-		});
-	});
+    $(document).on('click', '.selectKeyword', function () {
+        var kw = $(this).text();
+        $.post('/list_keywords', {'keyword':kw}, function (html) {
+            $('#kwt').html(html);
+        })
+    });
+
+    $(document).on('click', '.selectCategory', function () {
+        var cn = $(this).text();
+        $.post('/list_products', {'category_name':cn}, function (html) {
+            $('#productTable').html(html);
+        })
+    });
 
 	$(document).on('click', '.uploadProduct', function () {
 		if (!logged) {
 			alert('Need to Login');
 			return false;
 		}
-		var keywords = get_kws(this);
 		var pid = get_pid(this);
-		$.post('/check_keyword', {'keywords':keywords}, function (data) {
+		$.post('/check_keyword', {'pid':pid}, function (data) {
 			if (ws.readyState !== 1) {
 				alert('WebSocket error');
 				return false;
@@ -207,55 +226,14 @@ $(function(){
 		}
 	});
 
-	$(document).on('click', '.reRichDesc', function () {
-		var pid = get_pid(this);
-		$.post('/rich', {'pid':pid}, function (data) {
-			alert(data.ok);
-		});
-	});
-
-	$(document).on('click', '.selectCategory', function () {
-		var keywords = $(this).text();
-		$.post('/list_product_by_kw', {'keywords':keywords}, function (html) {
-			$('input[name="key_words"]').val(keywords);
-			$('#productTable').html(html);
-		});
-	});
-	// alter product name 
-	$(document).on('click', '.changeProductName', function () {
-		var pid = get_pid(this);
-		var product_name = $(this).parent().siblings('input').val();
-
-		$.post('/change_product_name', {'product_name':product_name,'pid':pid}, function (data) {
-			alert(data.ok);
-		});
-	});
-	// collect product variant names
-	$(document).on('click', '.collectProductName', function () {
-		var product_name = $(this).parent().siblings('input').val();
-		$.post('/collect_variant_names', {'product_name':product_name}, function (data) {
-			alert(data.ok);
-		});
-	});
-
-	$(document).on('click', '.kwRemove', function () {
-		var span = $(this).parent();
-		var keywords = span.text();
-
-		$.post('/remove_keywords', {'keywords':keywords}, function (data) {
-			if (data.ok) {
-				span.remove();
-			}
-		});
-		return false;
-	});
-
 	$(document).on('click', '.logBtn', function () {
 		var email = $(this).attr('email');
 		var password = $(this).attr('password');
 		var cmd = ['login', email, password].join('<>');
 		if (ws.readyState === 1) {
+            $.post('/set_db', {'email':email});
 			ws.send(cmd);
+            $(this).siblings('.logBtn').not(this).remove();
 		} else{
 			console.log('WebSocket error')
 		}

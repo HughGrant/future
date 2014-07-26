@@ -1,8 +1,14 @@
 tab:
     id: home
     name: Products
+panel:
+    action: product_category
+    replace_id: product_category
+    name: Show All Categories
 form:
-    id: uploadForm
+    tid: productTable
+    class: uniCreate
+    action: create_product
     fields:
         - element: input
           label: URL
@@ -16,6 +22,6 @@ form:
           content: Submit
           type: submit
 table:
-    heads: [ No, Picture, Actions, Upload]
+    heads: [ Picture, Name, Actions]
     body:
         id: productTable

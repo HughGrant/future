@@ -1,0 +1,36 @@
+tab:
+    id: order
+    name: Customer Order
+panel:
+    action: customer_order
+    replace_id: orderTable
+    name: Show All Orders
+form:
+    tid: orderTable
+    class: uniCreate
+    action: create_order
+    fields:
+        - element: input
+          label: Description
+          type: text
+          name: goods_name
+        - element: input
+          label: Quantity
+          type: text
+          name: quantity
+        - element: input
+          label: Unit Price (USD)
+          type: text
+          name: unit_price
+        - element: input
+          label: Shipping Cost
+          type: text
+          name: shipping_cost
+        - element: button
+          content: Submit
+          type: submit
+        - element: button
+          content: Add More
+          type: button
+          id: add_more_object
+

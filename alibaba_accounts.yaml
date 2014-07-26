@@ -1,8 +1,14 @@
 tab:
     id: loginSet
     name: Accouts
+panel:
+    action: ali_accounts
+    replace_id: AliTable
+    name: Show All Ali Account
 form:
-    id: logForm
+    tid: AliTable
+    class: uniCreate
+    action: create_ali_account
     fields:
         - element: input
           label: Email Account
@@ -15,3 +21,7 @@ form:
         - element: button
           content: Append New Alibaba Account
           type: submit
+table:
+    heads: [Account Name, Operations]
+    body:
+        id: AliTable

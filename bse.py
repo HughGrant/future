@@ -183,6 +183,9 @@ def valid_path(product_name):
     stable = {ord(i):None for i in '/\:*?"<>|'}
     return unicode(product_name).translate(stable)
 
+def db_name(email):
+    return email.replace('@', 'at').replace('.', 'dot')
+
 
 if __name__ == '__main__':
     # url ='http://www.alibaba.com/product-detail/TDP1-5-TDP5-TDP6-Tablet-Making_1892266532.html'

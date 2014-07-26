@@ -1,0 +1,35 @@
+{% for product in products %}
+<tr pid="{{product._id}}">
+
+  <td>
+    <a href="{{product.url}}" target="_blank">
+        <img src="/images/{{product.product_name_path}}/{{product.product_name_path}}.jpg" width="100" title="{{product.product_name}}">
+    </a>
+  </td>
+
+  <td>
+      <span>{{product.product_name}}</span>
+  </td>
+
+  <td>
+    <div class="btn-group">
+      <button type="button" class="btn btn-primary uniws" action="up">Upload Product</button>
+      <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+        <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li><a href="#" class="showKeyword" action="/list_keywords">Show Key Words</a></li>
+        <li><a href="#" class="uniOrder" action="/renew_desc">Renew Description</button>
+        <li class="divider"></li>
+        <li><a href="#" class="uniChange" action="/change_key_word">Change Key Word</a></li>
+        <li><a href="#" class="uniChange" action="/alter_name">Alter Name</a></li>
+        <li class="divider"></li>
+        <li><a href="#" class="uniws" action="cp">Copy Product</a></li>
+        <li><a href="#" class="uniws" action="">Get Ali ID</a></li>
+        <li class="divider"></li>
+        <li><a href="#" class="deleteProduct">Delete Product</a></li>
+      </ul>
+    </div>
+  </td>
+</tr>
+{% endfor %}

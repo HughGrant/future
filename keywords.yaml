@@ -1,18 +1,26 @@
 tab:
     id: profile
     name: Keywords
+panel:
+    action: product_keyword
+    replace_id: product_keyword
+    name: Show All Keywords
 form:
-    id: kwForm
+    tid: kwt
+    uni: uniCreate
+    action: add_keyword
     fields:
         - element: input
           label: Keyword
           type: text 
-          name: skwl
-          id: skwl
+          name: keyword
+        - element: input
+          label: Search Keyword
+          type: text 
+          name: search_keyword
         - element: button
           content: Submit
-          type: button
-          id: getKWS
+          type: submit
 table:
     heads: [ Word, Used, company_cnt, showwin_cnt, hotness]
     body:

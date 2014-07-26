@@ -1,8 +1,14 @@
 tab:
     id: customerInfo
     name: Customer
+panel:
+    action: customer_info
+    replace_id: customerTable
+    name: Show All Customers
 form:
-    id: customerInfoForm
+    tid: customerTable
+    class: uniCreate
+    action: create_customer
     fields:
         - element: input
           label: Email
@@ -15,7 +21,7 @@ form:
         - element: input
           label: Country
           type: text
-          name: coutnry
+          name: country
         - element: input
           label: Telephone
           type: text
@@ -24,10 +30,14 @@ form:
           label: Address
           type: text
           name: address
+        - element: input
+          label: Zip Code 
+          type: text
+          name: pcode
         - element: button
           content: Submit
-          type: button
+          type: submit 
 table:
-    heads: [ Name, Email, Telephone ]
+    heads: [ Name, Email, Operations]
     body:
         id: customerTable

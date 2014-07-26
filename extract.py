@@ -3,12 +3,12 @@ import os
 import time
 from pymongo import MongoClient
 from bson import ObjectId
-from bse import BSCollector, valid_path
+from bse import BSCollector, valid_path, collect_names, db_name
 from webdriver import WebDriver as Chrome
 from utils import select_file
-
-# ['hotmail', 'live', 'outlook']
-USER_DATA_DIR = 'e:/hope/chrome_profile'
+this_path = os.path.dirname(__file__)
+USER_DATA_DIR = os.path.join(this_path, 'broswer')
+IMAGE_PATH = os.path.join(this_path, 'images')
 LOGIN_URL = 'https://login.alibaba.com/'
 VIP_URL = 'http://sh.vip.alibaba.com/'
 ID_METHOD = {
@@ -35,10 +35,10 @@ class Ali(object):
         self.manage_product_url = 'http://hz.productposting.alibaba.com/product/manage_products.htm'
         self.copy_product_url = 'http://hz.productposting.alibaba.com/product/post_product_interface.htm?from=manage&import_product_id='
         self.keywords_url = 'http://hz.my.data.alibaba.com/industry/keywords.htm'
-        self.yason = MongoClient()['yason']
-        self.key_words_table = self.yason.key_words_table
-        self.products_table = self.yason.products_table
-        self.product_name_table = self.yason.product_name_table
+        self.db = MongoClient()[db_name(email)]
+        self.key_words_table = self.db.key_words_table
+        self.products_table = self.db.products_table
+        self.product_name_table = self.db.product_name_table
 
     def js_fill(self, selector, value):
         js = "document.querySelector('%s').value = '%s'" % (selector, value)
@@ -71,31 +71,35 @@ class Ali(object):
     def upload_product(self, product_id):
         p = self.products_table.find_one({'_id':ObjectId(product_id)})
 
+        sc = {'search_keyword':p['key_words']}
+        count = self.key_words_table.find(sc).count()
+        if count < 3:
+            self.collect_key_words(p['key_words'])
+
         self.b.visit('http://hz.productposting.alibaba.com/product/posting.htm')
         # clear the ui mask
         if self.b.find_by_css('div[class="ui-mask"]'):
             self.b.find_by_css('a[class="ui-window-close"]').first.click()
 
         # fill the category form
-        # self.b.find_by_css('#keyword').first.fill(p['category_name'])
-        self.js_fill('#keyword', p['category_name'])
-        self.b.find_by_css('button').first.click()
+        print 'category name:%s' % p['category_name']
+        self.js_fill('input[name=keyword]', p['category_name'])
+        self.b.find_by_css('button[type=submit]').first.click()
         self.b.find_by_css('.current').first.double_click()
         # fill the product info page
         self.fill_product_detail(p)
 
     def browser_select_file(self, name):
-        image_path = 'e:\hope\images'
-        file_path = os.path.join(image_path, name, name + '.jpg')
+        file_path = os.path.join(IMAGE_PATH, name, name + '.jpg')
         select_file(file_path, u'打开')
 
-    def copy_to_new_product(self, aid, search_keyword):
+    def copy_to_new_product(self, aid):
         url = self.copy_product_url + aid
         p = self.products_table.find_one({'aid':aid})
         self.b.visit(url)
         self.b.find_by_css('#yuigen0').first.click()
         self.browser_select_file(p['product_name_path'])
-        self.fill_three_key_words(search_keyword)
+        self.fill_three_key_words(p['key_words'])
         self.fill_new_product_name(p['product_name'])
         submit_btn = self.b.find_by_css('#submitFormBtnA').first
         submit_btn.mouse_over()
@@ -168,7 +172,16 @@ class Ali(object):
         return counter
 
     def fill_new_product_name(self, product_name):
-        variant_name = self.product_name_table.find_one({'product_name':product_name}).sort('used_count')
+        condition = {'product_name': product_name}
+        count = self.products_table.find(condition).count()
+        if count == 0:
+            names = collect_names(product_name)
+            data = []
+            for name in names:
+                data.append({'product_name':product_name, 'variant':name})
+            self.product_name_table.insert(data)
+
+        variant_name = self.product_name_table.find_one(condition).sort('used_count')
         # self.b.find_by_css('#productName').first.fill(variant_name['variant'])
         self.js_fill('#productName', variant_name['variant'])
         self.product_name_table.update(variant_name, {'$inc':{'used_count':1}})
@@ -184,9 +197,9 @@ class Ali(object):
         # self.b.find_by_css('#productKeyword').first.fill(keywords[0])
         # self.b.find_by_css('#keywords2').first.fill(keywords[1])
         # self.b.find_by_css('#keywords3').first.fill(keywords[2])
-        self.b.js_fill('#productKeyword', keywords[0])
-        self.b.js_fill('#keywords2', keywords[1])
-        self.b.js_fill('#keywords3', keywords[2])
+        self.js_fill('#productKeyword', keywords[0])
+        self.js_fill('#keywords2', keywords[1])
+        self.js_fill('#keywords3', keywords[2])
 
     def fill_product_detail(self, bse):
         while self.b.is_element_not_present_by_css('h1[class="ui-form-guide"]'):
@@ -197,8 +210,7 @@ class Ali(object):
         # three key words
         self.fill_three_key_words(bse['key_words'])
         # listing description
-        # self.b.find_by_css('#summary').first.fill(bse['summary'])
-        self.js_fill('#summary', bse['summary'])
+        self.b.find_by_css('#summary').first.fill(bse['summary'])
         # product detail
         name = self.b.find_by_css('.attr-title')
         option = self.b.find_by_css('.attribute-table-td')
@@ -214,7 +226,7 @@ class Ali(object):
                 self.b.find_option_by_text(pi.pop('After-sales Service Provided:', default_service)).first.click()
 
             elif text == 'Certification:':
-                option[i].find_by_tag('input').first.fill(pi.pop('Certification:', 'China Compulsory Certification'))
+                option[i].find_by_tag('input').first.fill(pi.pop('Certification:', 'NULL'))
 
             elif text == 'Weight:':
                 option[i].find_by_tag('input').first.fill(pi.pop('Weight:', 'kg'))
