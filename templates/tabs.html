@@ -7,14 +7,14 @@
         {% if field.element == "input" %}
             <div class="form-group">
             {% if field.label %} <label class="col-sm-2 control-label">{{field.label}}</label> {% endif %}
-            <div class="col-sm-8">
+            <div class="col-sm-6">
             <input type="{{field.type}}" class="form-control" name="{{field.name}}" id="{{field.id}}">
             </div>
             </div>
         {% endif %}
         {% if field.element == "button" %}
         <div class="form-group">
-        <div class="col-sm-offset-2 col-sm-8">
+        <div class="col-sm-offset-2 col-sm-6">
         <button type="{{field.type}}" class="btn btn-primary" id={{field.id}}>{{field.content}}</button>
         </div>
         </div>

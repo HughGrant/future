@@ -29,19 +29,13 @@ ws.onmessage = function (message) {
 	console.log(msg);
 	if (msg == 'login success') {
 		logged = true;
-		$('#allTabs').show();
-		return false;
-	} else if (msg.indexOf('id:') !== -1) {
-		var aid = msg.split(':')[1];
-		copytr.attr('aid', aid);
-		alert('Aid Got' + aid);
-		return false;
 	}
-	alert(message);
+    alert(msg);
 }
 
 $(function(){
     $('#quit').click(function () {
+        $(this).siblings('.logBtn').not(this).show();
         if (ws.readyState === 1) {
 			ws.send('quit');
 		} else {
@@ -49,20 +43,25 @@ $(function(){
 		}
     });
 
-    $('#add_more_object').click(function () {
-        // var inputs = $(this).parents('form').find('input');
-        // $.each(inputs, function(i, obj) {
-        //     $(obj).after(obj.outerHTML);
-        // });
-        var inputs = $(this).parents('form').find('div[class="form-group"]');
-        var html = '<hr>';
-        $.each(inputs, function(i, obj) {
-            if (i < 4) {
-                html += obj.outerHTML;
-            };
+    $(document).on('click', '.createOrder', function () {
+        var pid = get_pid(this);
+        $('input[name=customer_id]').val(pid); 
+        $('a[href="#order"').tab('show');
+    });
+
+
+    $(document).on('click', '.uniDelete', function () {
+        var _id = get_pid(this);
+        var ele = $(this);
+        var action = ele.attr('action');
+        var collection = ele.attr('collection');
+        var tr = ele.parents('tr');
+        data = {'_id':_id, 'collection':collection} 
+        $.post(action, data).done(function (msg) {
+            if (msg == 'success') {
+                tr.remove()
+            }
         });
-        var p = $(this).parents('form').find('div[class="form-group"]:eq(3)');
-        p.after(html);
     });
 
     $(document).on('click', '.uniOrder', function () {
@@ -83,40 +82,32 @@ $(function(){
         var tableId = form.attr('tid');
         $.post(action, data).done(function (html) {
             $('#'+tableId).prepend(html);
-        })
+            form[0].reset();
+        }).fail(function (msg) {
+            console.log(msg);
+            alert(msg.responseText);
+        });
         return false;
     });
 
     $(document).on('click', '.uniChange', function () {
         var pid = get_pid(this);
         var uni = $(this);
-        var action = uni.attr('action');
+        var prop_name = uni.attr('prop_name');
         $('#uniForm input[name=pid]').val(pid);
-        $('#uniForm input[name=action]').val(action);
+        $('#uniForm input[name=prop_name]').val(prop_name);
         $('#uniModal h4').html(uni.text());
         $('#uniModal').modal();
     });
 
-    $('#uniForm').submit( function () {
+    $('#uniForm').submit(function () {
 		var info = $(this).serializeObject();
-        $.post(info.action, info, function (data) {
+        $.post('/common_alter', info, function (data) {
             $('#uniModal').modal("hide");
             alert(data);
         });
         return false;
     });
-
-	$(document).on('click', '.deleteProduct', function () {
-		var pid = get_pid(this);
-		var tr = $(this).parents('tr');
-		$.post('/delete_product', {'pid':pid}, function (data) {
-			if (data.ok) {
-				tr.remove();
-			} else {
-				alert('delete product error');
-			}
-		});
-	});
 
 	$(document).on('click', '.uniws', function () {
         var action = $(this).attr('action');
@@ -137,29 +128,6 @@ $(function(){
             $(replace_id).html(html);
         });
     });
-
-	$(document).on('click', '.copyProduct', function () {
-		if (!logged) {
-			alert('Need to Login');
-			return false;
-		}
-
-		var aid = get_aid(this);
-		var keywords = get_kws(this);
-		var pname = get_pname(this);
-		var cmd = 'cp<>' + aid + '<>' + keywords;
-		$.post('/check_product_name', {'product_name':pname}, function (count) {
-			if (parseInt(count) > 0) {
-				if (ws.readyState === 1 && aid) {
-					ws.send(cmd);
-				} else {
-					console.log('WebSocket error or aid not exist');
-				}
-			} else {
-				alert('collect names first');
-			}
-		});
-	});
 
 	$(document).on('click', '.showKeyword', function () {
         var pid = get_pid(this);
@@ -184,45 +152,19 @@ $(function(){
         })
     });
 
-	$(document).on('click', '.uploadProduct', function () {
+	$(document).on('click', '.uniws', function () {
 		if (!logged) {
 			alert('Need to Login');
 			return false;
 		}
+
 		var pid = get_pid(this);
-		$.post('/check_keyword', {'pid':pid}, function (data) {
-			if (ws.readyState !== 1) {
-				alert('WebSocket error');
-				return false;
-			}
-			if (parseInt(data) > 0) {
-				ws.send('up ' + pid);
-			} else {
-				// collect key words
-				ws.send('ck ' + keywords);
-			}
-		});
-	});
-
-	$(document).on('click', '.productID', function () {
-		if (get_aid(this)) {
-			alert('Already have aid');
-			return false;
-		}
-
-		if (!logged) {
-			alert('Need to Login');
-			return false;
-		}
-
-		var product_name = get_pname(this);
-		var product_id = get_pid(this);
-		copytr = $(this).parents('tr');
-
+        var cmd = $(this).attr('action') + '<>' + pid;
+        
 		if (ws.readyState === 1) {
-			ws.send('id<>' + product_name + '<>' + product_id);
+            ws.send(cmd);
 		} else {
-			alert('WebSocket error');
+			alert('WebSocket error:' + cmd);
 		}
 	});
 
@@ -230,12 +172,15 @@ $(function(){
 		var email = $(this).attr('email');
 		var password = $(this).attr('password');
 		var cmd = ['login', email, password].join('<>');
-		if (ws.readyState === 1) {
-            $.post('/set_db', {'email':email});
-			ws.send(cmd);
-            $(this).siblings('.logBtn').not(this).remove();
-		} else{
-			console.log('WebSocket error')
-		}
+        $(this).siblings('.logBtn').not(this).hide();
+        $.post('/set_db', {'email':email}, function () {
+		    $('#allTabs').show();
+            if (ws.readyState === 1) {
+                ws.send(cmd);
+            } else {
+                console.log('WebSocket error')
+            }
+        });
+		
 	});
 });

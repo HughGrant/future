@@ -11,6 +11,9 @@ form:
     action: create_order
     fields:
         - element: input
+          type: hidden
+          name: customer_id
+        - element: input
           label: Description
           type: text
           name: goods_name
@@ -29,8 +32,7 @@ form:
         - element: button
           content: Submit
           type: submit
-        - element: button
-          content: Add More
-          type: button
-          id: add_more_object
-
+table:
+    heads: [ CheckBox, Customer, Description, Quantity, Unit Price, Shipping Cost]
+    body:
+        id: orderTable

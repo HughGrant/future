@@ -14,13 +14,7 @@ db = MongoClient()
 image_path = os.path.join(os.getcwd(), 'images')
 
 @app.route('/')
-def index():
-    kws = db.products_table.distinct('key_words')
-    accounts = db.accounts.find()
-    return render_template('index.html', kws=kws, accounts=accounts)
-
-@app.route('/index')
-def dynamic_index_page():
+def index_page():
     tabs = []
     pages = []
     for fname in glob('*.yaml'):
@@ -98,13 +92,22 @@ def remove_keyword():
     result = db.key_words_table.remove({'search_keyword':keywords})
     return jsonify(result)
 
-@app.route('/alter_name', methods=['POST'])
-def alter_name():
-    pn = request.form['uniData'].title().strip()
-    pn = valid_path(pn)
-    cdb = db[session['db_name']]
-
+@app.route('/common_alter', methods=['POST'])
+def common_alter():
+    new_value = request.form['new_value'].strip()
+    prop_name = request.form['prop_name']
     pid = {'_id':ObjectId(request.form['pid'])}
+    cdb = db[session['db_name']]
+    if prop_name == 'product_name':
+        return alter_name_aftermath(new_value, pid, cdb)
+
+    re = cdb.products_table.update(pid, {'$set':{prop_name:new_value}})
+    if re['ok']:
+        return 'success'
+    return 'fail'
+
+def alter_name_aftermath(pn, pid, cdb):
+    pn = valid_path(pn)
     product = cdb.products_table.find_one(pid)
     
     if product['product_name'] == pn:
@@ -146,6 +149,7 @@ def renew_desc():
 def create_product():
     url = request.form['url']
     kws = request.form['key_words']
+    category = request.form['category']
     bsc = BSCollector(url, image_path)
     bsc.collect()
     data = {
@@ -160,19 +164,12 @@ def create_product():
         'product_name': bsc.product_name.title(),
         'product_name_path': bsc.product_name_path
     }
+    if category:
+        data.update({'category_name':category})
+
     pid = db.products_table.insert(data)
     p = db.products_table.find_one({'_id':pid})
     return render_template('product.html', products=[p])
-
-
-@app.route('/change_key_word', methods=['POST'])
-def change_key_word():
-    new_kw = request.form['uniData']
-    pid = {'_id':ObjectId(request.form['pid'])}
-    re = db[session['db_name']].products_table.update(pid, {'$set':{'key_words':new_kw}})
-    if re['ok']:
-        return 'success'
-    return 'fail'
 
 @app.route('/list_keywords', methods=['POST'])
 def list_keywords():
@@ -209,20 +206,48 @@ def create_ali_account():
     return render_template('logBtn.html', accounts=[account,])
 
 
-@app.route('/delete_product', methods=['POST'])
-def delete_product():
-    pid = ObjectId(request.form['pid'])
-    product = db.products_table.find_one(pid)
-    result = db.products_table.remove({'_id':pid})
+def delete_product_aftermath(product_name_path):
     try:
-        shutil.rmtree(os.path.join(image_path, product['product_name_path']))
+        shutil.rmtree(os.path.join(image_path, product_name_path))
     except Exception, e:
-        print e
-    return jsonify(result)
+        print str(e)
+
+@app.route('/common_delete', methods=['POST'])
+def common_delete():
+    _id = {'_id':ObjectId(request.form['_id'])}
+    collection = request.form['collection']
+    collection = db[session['db_name']][collection]
+    if collection.name == 'products_table':
+        product = collection.find_one(_id)
+        delete_product_aftermath(product['product_name_path'])
+
+    result = collection.remove(_id)
+    return 'success' 
 
 @app.route('/create_order', methods=['POST'])
 def create_order():
-    pass
+    cid = request.form['customer_id']
+    if not cid:
+        return 'no customer id', 403
+    data = {
+        'customer_id': cid,
+        'goods_name': request.form['goods_name'],
+        'quantity': request.form['quantity'],
+        'unit_price': request.form['unit_price'],
+        'shipping_cost': request.form['shipping_cost'],
+    }
+    cdb = db[session['db_name']]
+    customer = cdb.customers.find_one({'_id':ObjectId(cid)})
+    data.update({'customer_name':customer['name']})
+    cdb.orders.insert(data)
+    return render_template('order_info.html', orders=[data])
+
+@app.route('/customer_order', methods=['POST'])
+def customer_order():
+    orders = db[session['db_name']].orders.find() 
+    if not orders.count():
+        return 'no orders right now'
+    return render_template('order_info.html', orders=orders)
     
 @app.route('/customer_info', methods=['POST'])
 def customer_info():

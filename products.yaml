@@ -18,6 +18,10 @@ form:
           label: Key Words
           type: text
           name: key_words
+        - element: input
+          label: Category
+          type: text
+          name: category
         - element: button
           content: Submit
           type: submit

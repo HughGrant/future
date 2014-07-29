@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import time
-from KeyBoard import press, typer
+from KeyBoard import press, typer, release
 
-def select_file(file_path, title):
+def select_file(file_path):
     time.sleep(1.5)
     press('shift')
     typer(file_path)

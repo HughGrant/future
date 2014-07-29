@@ -12,7 +12,7 @@
   <div id="logBtnGroup">
   {% include "logBtn.html" %}
   </div>
-  <div id="allTabs">
+  <div id="allTabs" style="display:none;">
   <div>
     <ul id="myTab" class="nav nav-tabs" role="tablist">
       {% for tab in tabs %}
@@ -31,11 +31,13 @@
           <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
           <h4 class="modal-title">Univeral Change Filed</h4>
         </div>
-        <form id="uniForm">
+        <form id="uniForm" action="/common_alter">
         <div class="modal-body">
-          <p><input type="text" class="form-control" name='uniData'></p>
+          <p>
+          <input type="text" class="form-control" name='new_value'>
           <input type="hidden" name="pid">
-          <input type="hidden" name="action">
+          <input type="hidden" name="prop_name">
+          </p>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-primary">Submit</button>

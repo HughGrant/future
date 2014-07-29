@@ -43,6 +43,15 @@ class Ali(object):
     def js_fill(self, selector, value):
         js = "document.querySelector('%s').value = '%s'" % (selector, value)
         self.b.execute_script(js)
+    
+    def select(self, _id, value):
+        xp = '//select[@id="%s"]/option[normalize-space(text())="%s"]' % (_id, value)
+        self.b.find_by_xpath(xp).first.click()
+
+    def find_and_select(self, element, value):
+        select = element.find_by_tag('select')
+        if select:
+            self.select(select.first['id'], value)
 
     def login(self, email, password):
         self.b.visit(VIP_URL)
@@ -82,16 +91,16 @@ class Ali(object):
             self.b.find_by_css('a[class="ui-window-close"]').first.click()
 
         # fill the category form
-        print 'category name:%s' % p['category_name']
         self.js_fill('input[name=keyword]', p['category_name'])
         self.b.find_by_css('button[type=submit]').first.click()
         self.b.find_by_css('.current').first.double_click()
         # fill the product info page
         self.fill_product_detail(p)
+        print 'tuwenmin----------------------------------'
 
     def browser_select_file(self, name):
         file_path = os.path.join(IMAGE_PATH, name, name + '.jpg')
-        select_file(file_path, u'打开')
+        select_file(file_path)
 
     def copy_to_new_product(self, aid):
         url = self.copy_product_url + aid
@@ -109,15 +118,19 @@ class Ali(object):
         if self.b.is_element_present_by_css('#display-new', 5):
             return True
 
-    def get_product_id(self, product_name, product_id):
+    def get_product_id(self, pid):
         if 'products_manage' not in self.b.url:
             self.b.visit(self.manage_product_url)
-
+        
+        self.b.find_link_by_partial_text("ALL (").first.click()
+        p = self.products_table.find_one({'_id':ObjectId(pid)})
+        product_name = p['product_name']
         first_page = self.b.find_link_by_text('1')
+
         if first_page:
             first_page.click()
 
-        aid = self.get_product_aid_recursively(product_name, product_id)
+        aid = self.get_product_aid_recursively(product_name, pid)
         return aid
 
     def get_product_aid_recursively(self, product_name, product_id):
@@ -125,7 +138,7 @@ class Ali(object):
             time.sleep(1)
           
         nonesence = 'http://hz.productposting.alibaba.com/product/product_detail.htm?id='
-        a = self.b.find_link_by_partial_text(product_name)
+        a = self.b.find_link_by_text(product_name)
         if a:
             aid = a.first['href'].replace(nonesence, '').strip()
             self.products_table.update({'_id':ObjectId(product_id)}, {'$set':{'aid': aid}})
@@ -205,7 +218,6 @@ class Ali(object):
         while self.b.is_element_not_present_by_css('h1[class="ui-form-guide"]'):
             time.sleep(1)
         # product name
-        # self.b.find_by_css('#productName').first.fill(bse['product_name'])
         self.js_fill('#productName', bse['product_name'])
         # three key words
         self.fill_three_key_words(bse['key_words'])
@@ -220,6 +232,15 @@ class Ali(object):
             text = n.text
             if text == 'Type:':
                 pi.pop('Type:')
+
+            elif text == 'Computerized:':
+                self.find_and_select(option[i], pi.pop('Computerized:', 'No'))
+
+            elif text == 'Warranty:':
+                option[i].find_by_tag('input').first.fill(pi.pop('Warranty:', 'NULL'))
+
+            elif text == 'Power(W):':
+                option[i].find_by_tag('input').first.fill(pi.pop('Power(W):', 'w'))
 
             elif text == 'After-sales Service Provided:':
                 default_service = 'No overseas service provided'
@@ -249,7 +270,7 @@ class Ali(object):
                 option[i].find_by_tag('input').first.fill(pi.pop('Voltage:', '220v or 110v or customized'))
 
             elif text == 'Condition:':
-                self.b.find_option_by_text('New').first.click()
+                self.find_and_select(option[i], 'New')
 
             elif text == 'Place of Origin:':
                 self.b.select('contryValue', 'CN-China (Mainland)')
@@ -290,16 +311,20 @@ class Ali(object):
 
 
         # trade information NO WHOLESALE right now
-        if self.b.is_element_present_by_id('setDefaultBtn'):
-            self.b.find_by_css('#setDefaultBtn').first.click()
+        no_wholesale = self.b.find_by_css('#setDefaultBtn')
+        if no_wholesale and no_wholesale.first.visible:
+            no_wholesale.first.click()
 
-        for k, v in bse['trade_information'].iteritems():
-            if 'fill' == ID_METHOD[k]:
-                self.b.find_by_id(k).first.fill(v)
-            elif 'select' == ID_METHOD[k]:
-                self.choose_option(self.b.find_by_id(k).first, v)
-            elif 'paymentMethod' == k:
-                self.check_payment_method(v)
+        ti = bse['trade_information']
+        # 20 is number for Set/Sets
+        self.select('minOrderUnit', ti.pop('minOrderUnit', 'Set/Sets'))
+        self.select('supplyUnit', ti.pop('supplyUnit', 'Set/Sets'))
+        self.select('priceUnit', ti.pop('priceUnit', 'Set'))
+        self.select('moneyType', ti.pop('moneyType', 'USD'))
+        self.select('supplyPeriod', ti.pop('supplyPeriod', 'Week'))
+        self.check_payment_method(ti.pop('paymentMethod'))
+        for k, v in ti.iteritems():
+            self.js_fill('#' + k, v)
 
         self.b.find_by_css('#packagingDesc').first.fill(bse['pd']['Packaging Detail:'])
         self.b.find_by_css('#consignmentTerm').first.fill(bse['pd']['Delivery Detail:'])
